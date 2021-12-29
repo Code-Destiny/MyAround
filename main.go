@@ -168,6 +168,7 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	// Get the credentials of GCS
 	ctx := context.Background()
 	// replace it with your real bucket name.
+	// Save the file in request to GCS
 	_, attrs, err := saveToGCS(ctx, file, BUCKET_NAME, id)
 	if err != nil {
 		http.Error(w, "GCS is not setup", http.StatusInternalServerError)
