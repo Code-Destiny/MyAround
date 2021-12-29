@@ -46,7 +46,7 @@ type Post struct {
 }
 
 func main() {
-	fmt.Println("start")
+	// fmt.Println("start")
 	// Create a client
 	client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
 	if err != nil {
