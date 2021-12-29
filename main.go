@@ -17,6 +17,11 @@ import (
 
 	// elastic "github.com/olivere/elastic/v7"
 	// elastic "gopkg.in/olivere/elastic.v5"
+	"github.com/auth0/go-jwt-middleware"
+	// "github.com/dgrijalva/jwt-go"
+
+	"github.com/form3tech-oss/jwt-go"
+	"github.com/gorilla/mux"
 	elastic "gopkg.in/olivere/elastic.v3"
 )
 
@@ -28,7 +33,7 @@ const (
 	//PROJECT_ID = "around-xxx"
 	//BT_INSTANCE = "around-post"
 	// Needs to update this URL if you deploy it to cloud.
-	ES_URL      = "http://34.125.231.212:9200"
+	ES_URL      = "http://34.125.255.48:9200"
 	BUCKET_NAME = "post-images-336313"
 )
 
@@ -44,6 +49,8 @@ type Post struct {
 	Location Location `json:"location"`
 	Url      string   `json:"url"`
 }
+
+var mySigningKey = []byte("secret")
 
 func main() {
 	// fmt.Println("start")
@@ -80,9 +87,29 @@ func main() {
 	}
 
 	fmt.Println("started service")
-	http.HandleFunc("/post", handlerPost)
-	http.HandleFunc("/search", handlerSearch)
+	r := mux.NewRouter()
+
+	var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
+		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
+			return mySigningKey, nil
+		},
+		SigningMethod: jwt.SigningMethodHS256,
+	})
+
+	// router让jwtMiddleware先验证request中的token，成功则转交给handlerPost处理
+	// 必须得有token才能进行post和search，否则jwtmiddleware返回error给browser
+	r.Handle("/post", jwtMiddleware.Handler(http.HandlerFunc(handlerPost))).Methods("POST")
+	r.Handle("/search", jwtMiddleware.Handler(http.HandlerFunc(handlerSearch))).Methods("GET")
+	// login和signup时还没有token，故不用验证
+	r.Handle("/login", http.HandlerFunc(loginHandler)).Methods("POST")
+	r.Handle("/signup", http.HandlerFunc(signupHandler)).Methods("POST")
+
+	http.Handle("/", r)
 	log.Fatal(http.ListenAndServe(":8080", nil))
+
+	// http.HandleFunc("/post", handlerPost)
+	// http.HandleFunc("/search", handlerSearch)
+	// log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
 
@@ -103,16 +130,24 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
 
+	// Get username from token
+	// A middleware that will check that a JWT is sent on the Authorization header
+	// and will then set the content of the JWT into the user variable of the request.
+	user := r.Context().Value("user")
+	claims := user.(*jwt.Token).Claims
+	username := claims.(jwt.MapClaims)["username"]
+
 	// 32 << 20 is the maxMemory param for ParseMultipartForm, equals to 32MB (1MB = 1024 * 1024 bytes = 2^20 bytes)
 	// After you call ParseMultipartForm, the file will be saved in the server memory with maxMemory size.
 	// If the file size is larger than maxMemory, the rest of the data will be saved in a system temporary file.
+	// Parse request to multipart form
 	r.ParseMultipartForm(32 << 20)
 	// Parse from form data.
 	fmt.Printf("Received one post request %s\n", r.FormValue("message"))
 	lat, _ := strconv.ParseFloat(r.FormValue("lat"), 64)
 	lon, _ := strconv.ParseFloat(r.FormValue("lon"), 64)
 	p := &Post{
-		User:    "1111",
+		User:    username.(string),
 		Message: r.FormValue("message"),
 		Location: Location{
 			Lat: lat,
