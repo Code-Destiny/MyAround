@@ -126,8 +126,8 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 		// Tell the frontend there's an error
 		http.Error(w, "Image is not available", http.StatusInternalServerError)
 		fmt.Printf("Image is not available %v.\n", err)
-		// panic(err)
-		return
+		panic(err)
+		// return
 	}
 	defer file.Close()
 	// Get the credentials of GCS
@@ -137,8 +137,8 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "GCS is not setup", http.StatusInternalServerError)
 		fmt.Printf("GCS is not setup %v\n", err)
-		//    panic(err)
-		return
+		panic(err)
+		// return
 	}
 
 	// Update the media link after saving to GCS.
@@ -192,7 +192,7 @@ func saveToES(p *Post, id string) {
 	es_client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
 	if err != nil {
 		panic(err)
-		return
+		// return
 	}
 
 	// Save it to index
@@ -205,7 +205,7 @@ func saveToES(p *Post, id string) {
 		Do()
 	if err != nil {
 		panic(err)
-		return
+		// return
 	}
 
 	fmt.Printf("Post is saved to Index: %s\n", p.Message)
@@ -226,7 +226,7 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	client, err := elastic.NewClient(elastic.SetURL(ES_URL), elastic.SetSniff(false))
 	if err != nil {
 		panic(err)
-		return
+		// return
 	}
 
 	// Define geo distance query as specified in
@@ -268,7 +268,7 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	js, err := json.Marshal(ps)
 	if err != nil {
 		panic(err)
-		return
+		// return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
