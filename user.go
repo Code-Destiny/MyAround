@@ -108,7 +108,7 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 	var u User
 	if err := decoder.Decode(&u); err != nil {
 		panic(err)
-		return
+		// return
 	}
 	// 判断用户名是否合法
 	if u.Username != "" && u.Password != "" && usernamePattern(u.Username) {
@@ -137,7 +137,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	var u User
 	if err := decoder.Decode(&u); err != nil {
 		panic(err)
-		return
+		// return
 	}
 
 	if checkUser(u.Username, u.Password) {
